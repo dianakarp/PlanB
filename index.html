@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Plan Bee</title>
-<meta name="description" content="Find the day your whole hive is free. No sign-ups: make a plan, send the link, and everyone taps the days they can make it.">
+<meta name="description" content="Adulting is hard. Hope this makes it easy. Pick your days, send the link, and see which day works.">
 <meta property="og:title" content="Plan Bee">
-<meta property="og:description" content="Find the day your whole hive is free. Tap the days you can make it.">
+<meta property="og:description" content="Adulting is hard. Hope this makes it easy. Tap the days you can make it.">
 <meta property="og:type" content="website">
 <meta name="theme-color" content="#F5F3F8" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1E1D24" media="(prefers-color-scheme: dark)">
@@ -97,8 +97,6 @@
   .trail { fill: none; stroke: var(--trail); stroke-width: 2.2; stroke-dasharray: 1 7; stroke-linecap: round; }
   .wordmark { font-size: 46px; font-weight: 600; letter-spacing: -.005em; }
   .tagline { margin-top: 4px; font-family: var(--display); font-size: 20px; font-weight: 500; text-wrap: balance; }
-  .lede { max-width: 30em; margin: 12px auto 0; color: var(--muted); }
-  .fact { max-width: 32em; margin: 24px auto 0; color: var(--muted); font-size: 14px; text-align: center; }
 
   /* Panels and fields */
   .panel { margin-top: 22px; padding: 20px; border-radius: 26px; background: var(--petal); box-shadow: var(--glow); }
@@ -226,6 +224,8 @@
   }
   .empty .bee { flex: none; width: 54px; height: 45px; }
   .foot { margin-top: 32px; text-align: center; font-size: 14px; color: var(--muted); }
+  .foot + .foot { margin-top: 6px; }
+  .foot a { color: inherit; text-underline-offset: 3px; }
 
   /* Other states */
   .state { padding-top: 12vh; text-align: center; }
@@ -289,6 +289,7 @@ const fmtShort = s => parse(s).toLocaleDateString(undefined, { month: "short", d
 const same = (a, b) => a.trim().toLowerCase() === b.trim().toLowerCase();
 const names = list => list.map(p => p.name).join(", ");
 const today = iso(new Date());
+const CREDIT = `<p class="foot">Made by <a href="https://github.com/dianakarp">dianakarp</a> to socialize more on 11/21/26</p>`;
 
 // ───────── The bee (drawn here, used everywhere) ─────────
 let beeCount = 0;
@@ -376,8 +377,7 @@ function showCreate() {
     <header class="hero">
       ${flightPath()}
       <h1 class="wordmark">Plan Bee</h1>
-      <p class="tagline">Find the day your whole hive is free.</p>
-      <p class="lede">No sign-ups. Make a plan, send the link, and everyone taps the days they can make it. Plan Bee ranks the three best days.</p>
+      <p class="tagline">Adulting is hard.<br>Hope this makes it easy.</p>
     </header>
     <form id="create" class="panel" novalidate>
       <label class="field">What's the plan?
@@ -390,7 +390,7 @@ function showCreate() {
       <button class="btn honey wide" id="go">Make the plan</button>
       <p id="msg" class="msg" role="status"></p>
     </form>
-    <p class="fact">Fun fact: honeybee swarms choose a new home this way. Scouts dance for their favorite spot, and the spot with the most scouts wins.</p>`;
+    ${CREDIT}`;
 
   $("start").addEventListener("change", () => {
     const s = $("start").value; if (!s) return;
@@ -469,7 +469,8 @@ function showPlan() {
       <ul id="people" class="people"></ul>
     </section>
 
-    <p class="foot">This plan is deleted automatically after ${esc(fmtShort(plan.expires_at))}.</p>`;
+    <p class="foot">This plan is deleted automatically after ${esc(fmtShort(plan.expires_at))}.</p>
+    ${CREDIT}`;
 
   $("share").addEventListener("click", async () => {
     if (canShare) {
