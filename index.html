@@ -1,0 +1,746 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Plan Bee</title>
+<meta name="description" content="Find the day your whole hive is free. No sign-ups: make a plan, send the link, and everyone taps the days they can make it.">
+<meta property="og:title" content="Plan Bee">
+<meta property="og:description" content="Find the day your whole hive is free. Tap the days you can make it.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#F5F3F8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1E1D24" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%90%9D%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400..700&family=Nunito:wght@400..800&display=swap">
+<style>
+  :root {
+    --field: #F5F3F8;      /* soft lavender-grey background */
+    --petal: #FFFFFF;      /* panels */
+    --cell: #F4F1F8;       /* calendar days and inputs */
+    --line: #E6E1EE;
+    --ink: #3A3546;        /* soft charcoal text */
+    --muted: #6F6882;
+    --on-honey: #3A3546;
+    --honey: #F4D06F;      /* butter honey */
+    --honey-edge: #E2B853;
+    --honey-soft: rgba(244, 208, 111, .5);
+    --honey-wash: #FBF4DE;
+    --ring: #CFA43A;
+    --rose: #F3D3DE;
+    --rose-ink: #A0476A;
+    --lilac: #E0D8F4;
+    --lilac-ink: #63549F;
+    --trail: #B9AEDB;
+    --focus: #8E80C8;
+    --av0: #F8EBC4; --av1: #F6DDE6; --av2: #E6E0F7; --av3: #DCEFE5; --av4: #DDEBF6; --av5: #F7E3D6;
+    --glow: 0 1px 2px rgba(58, 53, 70, .05), 0 10px 28px -14px rgba(58, 53, 70, .16);
+    --display: "Fredoka", "Nunito", ui-rounded, system-ui, sans-serif;
+    --body: "Nunito", ui-rounded, "Avenir Next", system-ui, sans-serif;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --field: #1E1D24;
+      --petal: #28262F;
+      --cell: #322F3B;
+      --line: #3E3A49;
+      --ink: #E9E6EF;
+      --muted: #A7A1B4;
+      --honey: #E3C46E;
+      --honey-edge: #BFA052;
+      --honey-soft: rgba(227, 196, 110, .75);
+      --honey-wash: #2D2A33;
+      --ring: #F1EDF6;
+      --rose: #D9A9BC;
+      --rose-ink: #E5A9BF;
+      --lilac: #C3B8E8;
+      --lilac-ink: #BDB2EC;
+      --trail: #6E6590;
+      --focus: #A99DE0;
+      --av0: #514832; --av1: #4E3A45; --av2: #433C5C; --av3: #344A40; --av4: #354655; --av5: #4F3F36;
+      --glow: 0 1px 2px rgba(0, 0, 0, .2), 0 12px 30px -16px rgba(0, 0, 0, .55);
+      color-scheme: dark;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0; min-height: 100vh; background: var(--field); color: var(--ink);
+    font: 400 16px/1.6 var(--body); -webkit-font-smoothing: antialiased;
+  }
+  main { max-width: 560px; margin: 0 auto; padding: 20px 16px calc(56px + env(safe-area-inset-bottom)); }
+  h1, h2, h3 { font-family: var(--display); font-weight: 600; line-height: 1.2; margin: 0; text-wrap: balance; }
+  p { margin: 0; text-wrap: pretty; }
+  b, strong { font-weight: 700; }
+  a { color: var(--lilac-ink); }
+  button, input { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+  /* The bee keeps its own colors in both themes */
+  .bee { display: block; overflow: visible; }
+  .bee-body { fill: #F6CF5E; }
+  .bee-ink { fill: #3A3546; }
+  .bee-outline { fill: none; stroke: #3A3546; stroke-width: 2.6; }
+  .bee-line { fill: none; stroke: #3A3546; stroke-width: 2.4; stroke-linecap: round; }
+  .bee-line.thin { stroke-width: 2.1; }
+  .bee-cheek { fill: #F2A7BE; }
+  .wing { fill: rgba(255, 255, 255, .9); stroke: #3A3546; stroke-width: 2.2; }
+  .flying .flap { transform-box: fill-box; transform-origin: 50% 100%; animation: flap .12s ease-in-out 27 alternate; }
+  @keyframes flap { to { transform: scaleY(.55); } }
+
+  /* Home */
+  .hero { text-align: center; }
+  .dance { display: block; width: min(100%, 340px); margin: 0 auto; overflow: visible; }
+  .trail { fill: none; stroke: var(--trail); stroke-width: 2.2; stroke-dasharray: 1 7; stroke-linecap: round; }
+  .wordmark { font-size: 46px; font-weight: 600; letter-spacing: -.005em; }
+  .tagline { margin-top: 4px; font-family: var(--display); font-size: 20px; font-weight: 500; text-wrap: balance; }
+  .lede { max-width: 30em; margin: 12px auto 0; color: var(--muted); }
+  .fact { max-width: 32em; margin: 24px auto 0; color: var(--muted); font-size: 14px; text-align: center; }
+
+  /* Panels and fields */
+  .panel { margin-top: 22px; padding: 20px; border-radius: 26px; background: var(--petal); box-shadow: var(--glow); }
+  .panel h2, .block h2 { margin-bottom: 14px; font-size: 20px; font-weight: 500; }
+  .field { display: block; margin-bottom: 14px; font-size: 15px; font-weight: 600; }
+  .field .opt { font-weight: 400; color: var(--muted); }
+  .field input {
+    display: block; width: 100%; min-height: 48px; margin-top: 6px; padding: 11px 14px;
+    border: 1.5px solid var(--line); border-radius: 14px; background: var(--cell); font-size: 16px; font-weight: 400;
+  }
+  .field input:focus { border-color: var(--focus); }
+  .field input::placeholder { color: var(--muted); opacity: .75; }
+  .pair { display: flex; flex-wrap: wrap; gap: 0 12px; }
+  .pair .field { flex: 1 1 150px; }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 10px 22px;
+    border: 1.5px solid transparent; border-radius: 999px; background: none; cursor: pointer; text-decoration: none;
+    font-family: var(--display); font-size: 17px; font-weight: 500; color: var(--ink);
+    transition: transform .08s, box-shadow .08s;
+  }
+  .btn.honey { background: var(--honey); color: var(--on-honey); box-shadow: 0 3px 0 var(--honey-edge); }
+  .btn.honey:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 var(--honey-edge); }
+  .btn.ghost { border-color: var(--line); }
+  .btn.ghost:active:not(:disabled) { transform: scale(.96); }
+  .btn.small { min-height: 36px; padding: 5px 14px; font-size: 15px; }
+  .btn:disabled { opacity: .55; cursor: default; }
+  .wide { width: 100%; margin-top: 4px; }
+  .msg { min-height: 1.5em; margin-top: 12px; font-size: 15px; font-weight: 600; color: var(--lilac-ink); }
+  .msg.err { color: var(--rose-ink); }
+
+  /* Plan page header */
+  .brand { display: inline-flex; align-items: center; gap: 4px; color: var(--ink); text-decoration: none; font-family: var(--display); font-size: 19px; font-weight: 500; }
+  .brand .bee { width: 44px; height: 37px; }
+  .plan-head { margin-top: 14px; }
+  .plan-head h1 { font-size: clamp(26px, 7vw, 32px); overflow-wrap: anywhere; }
+  .range { margin-top: 6px; color: var(--muted); }
+  .share { display: flex; gap: 8px; margin-top: 14px; }
+  .share input {
+    flex: 1; min-width: 0; min-height: 44px; padding: 8px 16px; border: 1.5px solid var(--line); border-radius: 999px;
+    background: var(--petal); color: var(--muted); font-size: 14px;
+  }
+  .share .btn { min-height: 44px; padding: 8px 18px; font-size: 15px; white-space: nowrap; }
+
+  /* Calendar */
+  .dow, .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+  .dow { margin: 2px 0 6px; text-align: center; font-size: 12px; font-weight: 600; color: var(--muted); }
+  .day {
+    position: relative; isolation: isolate; overflow: hidden; aspect-ratio: 1; padding: 7px 0 0;
+    display: grid; place-items: center; line-height: 1;
+    border: 2px solid transparent; border-radius: 12px; background: var(--cell); cursor: pointer;
+  }
+  /* The honey rises with the share of friends free that day */
+  .day::before {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0; z-index: -1;
+    height: calc(var(--lvl, 0) * 100%); background: var(--honey-soft); transition: height .35s ease;
+  }
+  .day b { font-size: 16px; font-weight: 600; }
+  .day small, .day i { position: absolute; top: 3px; font-size: 10px; font-style: normal; font-weight: 700; color: var(--muted); }
+  .day small { left: 5px; }
+  .day i { right: 5px; }
+  .day.hi b, .day.full small, .day.full i { color: var(--on-honey); }
+  .day.on { background: var(--honey); border-color: var(--ring); color: var(--on-honey); }
+  .day.on::before { display: none; }
+  .day.on small, .day.on i { color: var(--on-honey); }
+  @media (prefers-color-scheme: dark) {
+    .day b { text-shadow: 0 1px 1px rgba(0, 0, 0, .3); }
+    .day.on b, .day.hi b { text-shadow: none; }
+  }
+  .day:active:not(:disabled) { transform: scale(.93); }
+  .day:disabled { opacity: .35; cursor: default; }
+  .hint { margin: 12px 0 18px; font-size: 14px; color: var(--muted); }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+  .actions .honey { flex: 1 1 auto; }
+  .actions .ghost { padding: 8px 16px; font-size: 15px; }
+
+  /* Best days */
+  .block { margin-top: 30px; }
+  .tag {
+    display: inline-block; padding: 3px 17px; font-family: var(--display); font-size: 14px; font-weight: 500; color: var(--on-honey);
+    clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0 50%);
+  }
+  .tag-a { background: var(--honey); }
+  .tag-b { background: var(--rose); }
+  .tag-c { background: var(--lilac); }
+  .plan-a { padding: 18px 20px 20px; border: 1.5px solid var(--honey-edge); border-radius: 26px; background: var(--honey-wash); }
+  .plan-a h3 { margin-top: 10px; font-size: 25px; }
+  .tally { margin-top: 2px; font-weight: 700; }
+  .jar { height: 12px; margin: 10px 0 14px; overflow: hidden; border: 1.5px solid var(--honey-edge); border-radius: 99px; background: var(--petal); }
+  .jar span { display: block; height: 100%; background: var(--honey); }
+  .crowd { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .who { margin-top: 4px; font-size: 15px; overflow-wrap: anywhere; }
+  .miss { color: var(--rose-ink); }
+  .notes { display: grid; gap: 8px; margin: 12px 0 0; padding: 0; list-style: none; }
+  .notes li { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; }
+  .notes .bubble { padding: 6px 12px; border: 1px solid var(--line); border-radius: 4px 16px 16px 16px; background: var(--petal); overflow-wrap: anywhere; }
+  .alts { margin-top: 6px; padding: 0 6px; }
+  .plan-alt { display: flex; align-items: flex-start; gap: 12px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+  .plan-alt:last-child { border-bottom: 0; }
+  .plan-alt .tag { flex: none; margin-top: 1px; }
+  .plan-alt > div { min-width: 0; }
+  .plan-alt h3 { font-size: 18px; }
+
+  /* Friends */
+  .av {
+    display: inline-grid; place-items: center; flex: none; width: 34px; height: 34px; border-radius: 50%;
+    background: var(--av0); font-size: 19px; line-height: 1;
+  }
+  .av.t1 { background: var(--av1); } .av.t2 { background: var(--av2); } .av.t3 { background: var(--av3); }
+  .av.t4 { background: var(--av4); } .av.t5 { background: var(--av5); }
+  .av.out { filter: grayscale(1); opacity: .45; }
+  .notes .av { width: 28px; height: 28px; font-size: 16px; }
+  .people { margin: 0; padding: 0; list-style: none; }
+  .person { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .person:first-child { padding-top: 2px; }
+  .person:last-child { padding-bottom: 0; border-bottom: 0; }
+  .pinfo { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .pinfo span { display: block; font-size: 14px; color: var(--muted); }
+  .pinfo .lock { display: inline; font-size: 13px; }
+  .count { color: var(--muted); font-weight: 400; }
+  .empty {
+    display: flex; align-items: center; gap: 12px; padding: 16px; border: 1.5px dashed var(--line); border-radius: 20px;
+    background: var(--petal); color: var(--muted);
+  }
+  .empty .bee { flex: none; width: 54px; height: 45px; }
+  .foot { margin-top: 32px; text-align: center; font-size: 14px; color: var(--muted); }
+
+  /* Other states */
+  .state { padding-top: 12vh; text-align: center; }
+  .state .bee { width: 96px; height: 80px; margin: 0 auto 14px; }
+  .state h1 { font-size: 28px; }
+  .state p { max-width: 26em; margin: 10px auto 18px; color: var(--muted); }
+  .state code { padding: 1px 6px; border-radius: 6px; background: var(--petal); color: var(--ink); }
+  .loading .bee { animation: bob .9s ease-in-out infinite alternate; }
+  @keyframes bob { to { transform: translateY(-8px); } }
+
+  .confetti { position: fixed; inset: 0; z-index: 50; overflow: hidden; pointer-events: none; }
+  .confetti i { position: absolute; width: 11px; height: 12px; clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); }
+
+  @media (max-width: 420px) {
+    .panel { padding: 18px 14px; }
+    .dow, .cal { gap: 5px; }
+    .day small { left: 3px; }
+    .day i { right: 3px; }
+  }
+  @media (max-width: 360px) {
+    .day small, .day i { top: 2px; font-size: 8.5px; }
+    .day small { left: 2px; }
+    .day b { font-size: 15px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<main id="app"></main>
+
+<script>
+// ───────── SETUP: paste your Cloudflare Worker link between the quotes ─────────
+const API_URL = "https://plan-bee.dianaxduong.workers.dev"; // your Cloudflare Worker
+// ─────────────────────────────────────────────────────────────────────────────────
+
+const app = document.getElementById("app");
+const $ = id => document.getElementById(id);
+const API = API_URL.trim().replace(/\/+$/, "");
+const configured = /^https?:\/\/\S+$/.test(API);
+const planId = (new URLSearchParams(location.search).get("p") || "").trim().toLowerCase();
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const canShare = !!navigator.share && matchMedia("(pointer: coarse)").matches;
+
+const keep = (area, prefix = "planbee:") => ({
+  get: k => { try { return area().getItem(prefix + k); } catch { return null; } },
+  set: (k, v) => { try { area().setItem(prefix + k, v); } catch {} },
+  del: k => { try { area().removeItem(prefix + k); } catch {} },
+});
+const saved = keep(() => localStorage);
+const session = keep(() => sessionStorage);
+
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const parse = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const fmtLong = s => parse(s).toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
+const fmtShort = s => parse(s).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+const same = (a, b) => a.trim().toLowerCase() === b.trim().toLowerCase();
+const names = list => list.map(p => p.name).join(", ");
+const today = iso(new Date());
+
+// ───────── The bee (drawn here, used everywhere) ─────────
+let beeCount = 0;
+function bee(cls = "", attrs = "") {
+  const n = ++beeCount;
+  // The white "sticker" edge keeps the bee readable on light and dark backgrounds.
+  return `<svg class="bee ${cls}" viewBox="0 0 120 100" ${attrs} aria-hidden="true" focusable="false">
+    <defs>
+      <clipPath id="beeclip${n}"><circle cx="56" cy="60" r="31"/></clipPath>
+      <filter id="sticker${n}" x="-15%" y="-15%" width="130%" height="130%">
+        <feMorphology in="SourceAlpha" operator="dilate" radius="3" result="grown"/>
+        <feFlood flood-color="#FFFFFF"/>
+        <feComposite in2="grown" operator="in" result="edge"/>
+        <feMerge><feMergeNode in="edge"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+    <g filter="url(#sticker${n})">
+      <g class="flap"><ellipse class="wing" cx="44" cy="27" rx="12" ry="18" transform="rotate(-24 44 27)"/></g>
+      <path class="bee-ink" d="M27 63 L13 59 L27 55 Z"/>
+      <circle class="bee-body" cx="56" cy="60" r="31"/>
+      <g class="bee-ink" clip-path="url(#beeclip${n})"><rect x="27" y="20" width="9.5" height="80" rx="2"/><rect x="43" y="20" width="9.5" height="80" rx="2"/></g>
+      <circle class="bee-outline" cx="56" cy="60" r="31"/>
+      <path class="bee-line" d="M70 32 Q68 21 61 16"/><circle class="bee-ink" cx="60" cy="15" r="3.6"/>
+      <path class="bee-line" d="M80 35 Q85 23 93 20"/><circle class="bee-ink" cx="94" cy="19.5" r="3.6"/>
+      <ellipse class="bee-ink" cx="69" cy="56" rx="3.6" ry="4.6"/><ellipse class="bee-ink" cx="81" cy="56" rx="3.6" ry="4.6"/>
+      <circle cx="70.3" cy="54.2" r="1.35" fill="#fff"/><circle cx="82.3" cy="54.2" r="1.35" fill="#fff"/>
+      <ellipse class="bee-cheek" cx="64" cy="64.5" rx="4.6" ry="2.7"/><ellipse class="bee-cheek" cx="86.5" cy="64.5" rx="4.2" ry="2.7"/>
+      <path class="bee-line thin" d="M72 62.5 Q75 66 78 62.5"/>
+      <g class="flap"><ellipse class="wing" cx="57" cy="25" rx="11" ry="17" transform="rotate(16 57 25)"/></g>
+    </g>
+  </svg>`;
+}
+
+// The bee flies in on a dotted loop-de-loop trail and lands above the name.
+function flightPath() {
+  const path = "M18 134 C46 140 92 128 118 96 C136 72 126 40 102 40 C80 40 72 62 80 78 C92 102 132 116 160 112";
+  const motion = reduceMotion ? "" : `<animateMotion dur="3.2s" begin="0s" fill="freeze" calcMode="paced"><mpath href="#flight"/></animateMotion>`;
+  return `<svg class="dance" viewBox="0 0 320 160" aria-hidden="true" focusable="false">
+    <path id="flight" class="trail" d="${path}"/>
+    <g class="${reduceMotion ? "" : "flying"}"${reduceMotion ? ' transform="translate(160 112)"' : ""}>
+      ${bee("", 'x="-42" y="-35" width="84" height="70"')}
+      ${motion}
+    </g>
+  </svg>`;
+}
+
+// ───────── Friends get a critter ─────────
+const CRITTERS = ["🐻", "🐰", "🐱", "🐶", "🦊", "🐼", "🐨", "🐸", "🐥", "🐹", "🐯", "🐮", "🐷", "🐵", "🦄", "🐧", "🦔", "🐢", "🐙", "🦋"];
+function hash(s) { let h = 7; for (const ch of s) h = (h * 31 + ch.codePointAt(0)) >>> 0; return h; }
+function avatar(p, missing = false) {
+  const n = Math.max(0, (p.seq || 1) - 1);
+  const critter = CRITTERS[(n + hash(plan.id)) % CRITTERS.length];
+  return `<span class="av t${n % 6}${missing ? " out" : ""}" aria-hidden="true">${critter}</span>`;
+}
+
+// ───────── Talking to the Worker ─────────
+async function api(path, method = "GET", body) {
+  let res;
+  try {
+    res = await fetch(API + path, {
+      method,
+      headers: body ? { "Content-Type": "application/json" } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch {
+    throw Object.assign(new Error("Couldn't reach Plan Bee. Check your connection and try again."), { status: 0 });
+  }
+  let data = null;
+  try { data = await res.json(); } catch {}
+  if (!res.ok) throw Object.assign(new Error((data && data.error) || "Something went wrong. Try again."), { status: res.status });
+  return data;
+}
+
+function say(text, isErr = false) {
+  const m = $("msg"); if (!m) return;
+  m.textContent = text;
+  m.classList.toggle("err", isErr);
+}
+
+// ───────── Home: make a plan ─────────
+function showCreate() {
+  document.title = "Plan Bee";
+  const start = today, end = iso(addDays(parse(today), 20));
+  app.innerHTML = `
+    <header class="hero">
+      ${flightPath()}
+      <h1 class="wordmark">Plan Bee</h1>
+      <p class="tagline">Find the day your whole hive is free.</p>
+      <p class="lede">No sign-ups. Make a plan, send the link, and everyone taps the days they can make it. Plan Bee ranks the three best days.</p>
+    </header>
+    <form id="create" class="panel" novalidate>
+      <label class="field">What's the plan?
+        <input id="title" maxlength="80" autocomplete="off" placeholder="Picnic, game night, birthday dinner…">
+      </label>
+      <div class="pair">
+        <label class="field">Earliest day <input id="start" type="date" value="${start}" min="${start}"></label>
+        <label class="field">Latest day <input id="end" type="date" value="${end}" min="${start}" max="${iso(addDays(parse(start), 61))}"></label>
+      </div>
+      <button class="btn honey wide" id="go">Make the plan</button>
+      <p id="msg" class="msg" role="status"></p>
+    </form>
+    <p class="fact">Fun fact: honeybee swarms choose a new home this way. Scouts dance for their favorite spot, and the spot with the most scouts wins.</p>`;
+
+  $("start").addEventListener("change", () => {
+    const s = $("start").value; if (!s) return;
+    $("end").min = s;
+    $("end").max = iso(addDays(parse(s), 61));
+    if (!$("end").value || $("end").value < s) $("end").value = s;
+  });
+
+  $("create").addEventListener("submit", async ev => {
+    ev.preventDefault();
+    const title = $("title").value.trim(), s = $("start").value, e = $("end").value;
+    if (!title) { $("title").focus(); return say("Give your plan a name.", true); }
+    if (!s || !e) return say("Pick an earliest and a latest day.", true);
+    if (e < s) return say("The latest day needs to be on or after the earliest day.", true);
+    if ((parse(e) - parse(s)) / 864e5 > 61) return say("Keep the dates within about two months.", true);
+    $("go").disabled = true;
+    say("Making your plan…");
+    try {
+      const { id } = await api("/plans", "POST", { title, start: s, end: e });
+      session.set("new:" + id, "1");
+      location.href = location.pathname + "?p=" + encodeURIComponent(id);
+    } catch (err) {
+      say(err.message, true);
+      $("go").disabled = false;
+    }
+  });
+}
+
+// ───────── A plan: pick days, see the best ones ─────────
+let plan = null, lastData = "";
+const sel = new Set();
+const findPerson = name => plan.people.find(p => same(p.name, name));
+
+function showPlan() {
+  document.title = `${plan.title} · Plan Bee`;
+  const link = location.origin + location.pathname + "?p=" + encodeURIComponent(plan.id);
+  app.innerHTML = `
+    <header>
+      <a class="brand" href="${esc(location.pathname)}" title="Make a new plan">${bee()}Plan Bee</a>
+      <div class="plan-head">
+        <h1>${esc(plan.title)}</h1>
+        <p class="range">${esc(fmtShort(plan.start_date))} to ${esc(fmtShort(plan.end_date))}</p>
+      </div>
+      <div class="share">
+        <input id="link" readonly value="${esc(link)}" aria-label="Link to this plan">
+        <button class="btn honey" id="share">${canShare ? "Share link" : "Copy link"}</button>
+      </div>
+    </header>
+
+    <section class="panel" aria-labelledby="free-h">
+      <h2 id="free-h">When are you free?</h2>
+      <label class="field">Your name <input id="name" maxlength="40" autocomplete="off" placeholder="e.g. Sam"></label>
+      <div class="dow" aria-hidden="true"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
+      <div id="cal" class="cal"></div>
+      <p class="hint">Tap every day you could make it. More honey means more friends are free that day.</p>
+      <label class="field">Any time limits? <span class="opt">(optional)</span>
+        <input id="comment" maxlength="200" autocomplete="off" placeholder="e.g. only after 6pm on weekdays">
+      </label>
+      <label class="field"><span id="pin-label">Lock your answers with a PIN <span class="opt">(optional)</span></span>
+        <input id="pin" maxlength="12" autocomplete="off" inputmode="text" placeholder="Leave blank so anyone can edit">
+      </label>
+      <div class="actions">
+        <button class="btn honey" id="save">Save my days</button>
+        <button class="btn ghost" id="remove" hidden>Remove me</button>
+      </div>
+      <p id="msg" class="msg" role="status"></p>
+    </section>
+
+    <section class="block" aria-labelledby="best-h">
+      <h2 id="best-h">Best days</h2>
+      <div id="ranks"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="who-h">
+      <h2 id="who-h">Who's answered <span id="count" class="count"></span></h2>
+      <ul id="people" class="people"></ul>
+    </section>
+
+    <p class="foot">This plan is deleted automatically after ${esc(fmtShort(plan.expires_at))}.</p>`;
+
+  $("share").addEventListener("click", async () => {
+    if (canShare) {
+      try { await navigator.share({ title: plan.title, text: `Which days can you make "${plan.title}"?`, url: link }); } catch {}
+      return;
+    }
+    try { await navigator.clipboard.writeText(link); }
+    catch { $("link").select(); document.execCommand("copy"); }
+    $("share").textContent = "Copied!";
+    setTimeout(() => { const b = $("share"); if (b) b.textContent = "Copy link"; }, 1600);
+  });
+  $("link").addEventListener("focus", e => e.target.select());
+
+  $("cal").addEventListener("click", ev => {
+    const b = ev.target.closest(".day");
+    if (!b || b.disabled) return;
+    const k = b.dataset.d;
+    sel.has(k) ? sel.delete(k) : sel.add(k);
+    b.classList.toggle("on", sel.has(k));
+    b.setAttribute("aria-pressed", sel.has(k));
+  });
+  $("name").addEventListener("input", () => { syncNameUI(); renderCalendar(); });
+  $("name").addEventListener("change", () => {
+    const p = findPerson($("name").value);
+    if (p && sel.size === 0) loadPerson(p.name);
+  });
+  $("people").addEventListener("click", ev => {
+    const b = ev.target.closest("button[data-name]"); if (!b) return;
+    loadPerson(b.dataset.name);
+    $("free-h").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+  });
+  $("save").addEventListener("click", save);
+  $("remove").addEventListener("click", removeMe);
+
+  const me = saved.get(plan.id);
+  if (me && findPerson(me)) loadPerson(me, true);
+  else { syncNameUI(); renderCalendar(); }
+  renderResults();
+
+  if (session.get("new:" + plan.id)) {
+    session.del("new:" + plan.id);
+    say("Your plan is ready! Add your days, then send the link to your friends.");
+  }
+  maybeCelebrate();
+}
+
+function loadPerson(name, quiet = false) {
+  const p = findPerson(name); if (!p) return;
+  $("name").value = p.name;
+  $("comment").value = p.comment;
+  $("pin").value = "";
+  sel.clear();
+  p.days.forEach(d => sel.add(d));
+  syncNameUI();
+  renderCalendar();
+  if (!quiet || p.locked) say(p.locked ? `Editing ${p.name}. Enter the PIN to save changes.` : `Editing ${p.name}.`);
+}
+
+function syncNameUI() {
+  const p = findPerson($("name").value);
+  $("remove").hidden = !p;
+  $("save").textContent = p ? "Update my days" : "Save my days";
+  $("pin-label").innerHTML = p && p.locked
+    ? "PIN for this name <span class=\"opt\">(required to make changes)</span>"
+    : "Lock your answers with a PIN <span class=\"opt\">(optional)</span>";
+  $("pin").placeholder = p && p.locked ? "Enter the PIN" : "Leave blank so anyone can edit";
+}
+
+function renderCalendar() {
+  const me = $("name").value;
+  const others = plan.people.filter(p => !same(p.name, me));
+  const start = parse(plan.start_date), end = parse(plan.end_date);
+  let html = "";
+  for (let i = 0; i < start.getDay(); i++) html += "<span></span>";
+  for (let d = start; d <= end; d = addDays(d, 1)) {
+    const k = iso(d), on = sel.has(k), past = k < today;
+    const free = past ? [] : others.filter(p => p.days.includes(k));
+    const level = others.length ? free.length / others.length : 0;
+    const month = d.getDate() === 1 || k === plan.start_date ? d.toLocaleDateString(undefined, { month: "short" }) : "";
+    const label = fmtLong(k) + (free.length ? `, ${free.length} ${free.length === 1 ? "friend" : "friends"} free` : "");
+    const cls = "day" + (on ? " on" : "") + (level >= .6 ? " hi" : "") + (level >= .85 ? " full" : "");
+    html += `<button type="button" class="${cls}" data-d="${k}" style="--lvl:${level.toFixed(3)}"
+      aria-pressed="${on}" aria-label="${esc(label)}"${free.length ? ` title="Free: ${esc(names(free))}"` : ""}${past ? " disabled" : ""}>`
+      + (month ? `<small>${esc(month)}</small>` : "") + `<b>${d.getDate()}</b>` + (free.length ? `<i>${free.length}</i>` : "") + `</button>`;
+  }
+  $("cal").innerHTML = html;
+}
+
+function rankDays() {
+  const people = plan.people, days = [];
+  const from = plan.start_date > today ? plan.start_date : today;
+  for (let d = parse(from), end = parse(plan.end_date); d <= end; d = addDays(d, 1)) {
+    const k = iso(d);
+    const inn = people.filter(p => p.days.includes(k));
+    if (inn.length) days.push({ k, inn, out: people.filter(p => !p.days.includes(k)) });
+  }
+  return days.sort((a, b) => b.inn.length - a.inn.length || (a.k < b.k ? -1 : 1)).slice(0, 3);
+}
+
+function notesFor(list) {
+  const items = list.filter(p => p.comment)
+    .map(p => `<li>${avatar(p)}<span class="bubble"><b>${esc(p.name)}:</b> ${esc(p.comment)}</span></li>`).join("");
+  return items ? `<ul class="notes">${items}</ul>` : "";
+}
+
+function renderResults() {
+  const people = plan.people, total = people.length;
+  $("count").textContent = total ? `(${total})` : "";
+
+  if (!total) {
+    $("ranks").innerHTML = `<div class="empty">${bee()}<p>No answers yet. Add your days above, then send the link to your friends.</p></div>`;
+    $("people").innerHTML = `<li class="person"><span class="pinfo"><span>Nobody yet. You could be first!</span></span></li>`;
+    return;
+  }
+
+  const top = rankDays();
+  if (!top.length) {
+    $("ranks").innerHTML = `<div class="empty">${bee()}<p>Nobody has picked an upcoming day yet.</p></div>`;
+  } else {
+    const [a, ...rest] = top;
+    const everyone = a.out.length === 0 && total > 1;
+    $("ranks").innerHTML = `
+      <article class="plan-a" id="plan-a">
+        <span class="tag tag-a">Plan A</span>
+        <h3>${esc(fmtLong(a.k))}</h3>
+        <p class="tally">${everyone ? "Everyone can make it!" : `${a.inn.length} of ${total} can make it`}</p>
+        <div class="jar" aria-hidden="true"><span style="width:${Math.round(a.inn.length / total * 100)}%"></span></div>
+        <div class="crowd" aria-hidden="true">${a.inn.map(p => avatar(p)).join("")}${a.out.map(p => avatar(p, true)).join("")}</div>
+        <p class="who"><b>In:</b> ${esc(names(a.inn))}</p>
+        ${a.out.length ? `<p class="who miss"><b>Missing:</b> ${esc(names(a.out))}</p>` : ""}
+        ${notesFor(a.inn)}
+      </article>
+      ${rest.length ? `<div class="alts">${rest.map((d, i) => `
+        <article class="plan-alt">
+          <span class="tag tag-${i ? "c" : "b"}">Plan ${i ? "C" : "B"}</span>
+          <div>
+            <h3>${esc(fmtLong(d.k))}</h3>
+            <p class="who">${d.inn.length} of ${total} can make it${d.out.length ? `. <span class="miss">Missing: ${esc(names(d.out))}</span>` : "."}</p>
+          </div>
+        </article>`).join("")}</div>` : ""}`;
+  }
+
+  $("people").innerHTML = people.map(p => `
+    <li class="person">
+      ${avatar(p)}
+      <div class="pinfo">
+        <b>${esc(p.name)}</b>${p.locked ? ' <span class="lock" role="img" aria-label="locked with a PIN" title="Locked with a PIN">🔒</span>' : ""}
+        <span>${p.days.length} ${p.days.length === 1 ? "day" : "days"} picked</span>
+        ${p.comment ? `<span>${esc(p.comment)}</span>` : ""}
+      </div>
+      <button class="btn ghost small" data-name="${esc(p.name)}">Edit</button>
+    </li>`).join("");
+}
+
+function applyPlan(data) {
+  const text = JSON.stringify(data);
+  if (text === lastData) return false;
+  lastData = text;
+  plan = data;
+  return true;
+}
+
+function rerender() { syncNameUI(); renderCalendar(); renderResults(); }
+
+async function save() {
+  const typed = $("name").value.trim();
+  if (!typed) { $("name").focus(); return say("Add your name first.", true); }
+  const existing = findPerson(typed);
+  const name = existing ? existing.name : typed;
+  $("save").disabled = true;
+  say("Saving…");
+  try {
+    const data = await api(`/plans/${plan.id}/people`, "PUT", {
+      name, days: [...sel].sort(), comment: $("comment").value, pin: $("pin").value,
+    });
+    saved.set(plan.id, name);
+    applyPlan(data);
+    $("name").value = name;
+    rerender();
+    say(existing ? "Updated!" : "Saved! Send the link so your friends can add theirs.");
+    maybeCelebrate();
+  } catch (err) {
+    say(err.message, true);
+    if (err.status === 404) setTimeout(showMissing, 1200);
+  }
+  $("save").disabled = false;
+}
+
+async function removeMe() {
+  const p = findPerson($("name").value); if (!p) return;
+  if (!confirm(`Remove ${p.name} from this plan?`)) return;
+  try {
+    const data = await api(`/plans/${plan.id}/remove`, "POST", { name: p.name, pin: $("pin").value });
+    if (same(saved.get(plan.id) || "", p.name)) saved.del(plan.id);
+    applyPlan(data);
+    $("name").value = ""; $("comment").value = ""; $("pin").value = "";
+    sel.clear();
+    rerender();
+    say(`Removed ${p.name}.`);
+  } catch (err) { say(err.message, true); }
+}
+
+function maybeCelebrate() {
+  const a = rankDays()[0];
+  if (!a || a.out.length || plan.people.length < 2) return;
+  const key = `party:${plan.id}:${a.k}:${plan.people.length}`;
+  if (session.get(key)) return;
+  session.set(key, "1");
+  celebrate($("plan-a"));
+}
+
+function celebrate(anchor) {
+  if (reduceMotion || !anchor) return;
+  const box = anchor.getBoundingClientRect();
+  const layer = document.createElement("div");
+  layer.className = "confetti";
+  document.body.appendChild(layer);
+  const colors = ["var(--honey)", "var(--rose)", "var(--lilac)", "#FFFFFF", "var(--honey)"];
+  for (let i = 0; i < 40; i++) {
+    const bit = document.createElement("i");
+    bit.style.left = `${box.left + box.width / 2}px`;
+    bit.style.top = `${Math.max(40, box.top + 30)}px`;
+    bit.style.background = colors[i % colors.length];
+    layer.appendChild(bit);
+    const angle = Math.random() * Math.PI * 2, dist = 70 + Math.random() * 150;
+    bit.animate([
+      { transform: "translate(0, 0) rotate(0deg)", opacity: 1 },
+      { transform: `translate(${Math.cos(angle) * dist}px, ${Math.sin(angle) * dist * .7 + 140}px) rotate(${Math.random() * 540 - 270}deg)`, opacity: 0 },
+    ], { duration: 1100 + Math.random() * 700, easing: "cubic-bezier(.2,.8,.3,1)", fill: "forwards" });
+  }
+  setTimeout(() => layer.remove(), 2100);
+}
+
+// ───────── Other screens ─────────
+function showState(title, body, action = "", extraClass = "") {
+  app.innerHTML = `<div class="state ${extraClass}">${bee()}<h1>${title}</h1><p>${body}</p>${action}</div>`;
+}
+function showMissing() {
+  document.title = "Plan Bee";
+  showState("This plan isn't here",
+    "The link may be mistyped, or the plan was deleted (plans are cleared 30 days after their last day).",
+    `<a class="btn honey" href="${esc(location.pathname)}">Make a new plan</a>`);
+}
+
+// ───────── Start ─────────
+(async function start() {
+  if (!configured) {
+    return showState("Almost ready",
+      "Paste your Cloudflare Worker link into <code>index.html</code>, on the line that starts with <code>const API_URL</code>.");
+  }
+  if (!planId) return showCreate();
+
+  showState("Loading the plan…", "", "", "loading");
+  try {
+    applyPlan(await api(`/plans/${encodeURIComponent(planId)}`));
+    showPlan();
+  } catch (err) {
+    if (err.status === 404) return showMissing();
+    return showState("Couldn't load the plan", esc(err.message),
+      `<button class="btn honey" onclick="location.reload()">Try again</button>`);
+  }
+
+  // Pick up friends' answers without reloading.
+  const poll = async () => {
+    if (document.hidden || !$("cal")) return;
+    try { if (applyPlan(await api(`/plans/${plan.id}`))) rerender(); }
+    catch (err) { if (err.status === 404) showMissing(); }
+  };
+  setInterval(poll, 30000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) poll(); });
+})();
+</script>
+</body>
+</html>
