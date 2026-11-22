@@ -104,13 +104,18 @@
   .field { display: block; margin-bottom: 14px; font-size: 15px; font-weight: 600; }
   .field .opt { font-weight: 400; color: var(--muted); }
   .field input {
-    display: block; width: 100%; min-height: 48px; margin-top: 6px; padding: 11px 14px;
+    display: block; width: 100%; min-width: 0; min-height: 48px; margin-top: 6px; padding: 11px 14px;
     border: 1.5px solid var(--line); border-radius: 14px; background: var(--cell); font-size: 16px; font-weight: 400;
   }
   .field input:focus { border-color: var(--focus); }
   .field input::placeholder { color: var(--muted); opacity: .75; }
   .pair { display: flex; flex-wrap: wrap; gap: 0 12px; }
-  .pair .field { flex: 1 1 150px; }
+  .pair .field { flex: 1 1 170px; min-width: 0; }
+  /* iPhone date fields ignore width: 100% unless their built-in styling is reset */
+  @supports (-webkit-touch-callout: none) {
+    .field input[type="date"] { -webkit-appearance: none; appearance: none; }
+    .field input[type="date"]::-webkit-date-and-time-value { text-align: left; }
+  }
 
   /* Buttons */
   .btn {
@@ -223,7 +228,7 @@
     background: var(--petal); color: var(--muted);
   }
   .empty .bee { flex: none; width: 54px; height: 45px; }
-  .foot { margin-top: 32px; text-align: center; font-size: 14px; color: var(--muted); }
+  .foot { margin-top: 32px; text-align: center; font-size: 14px; color: var(--muted); text-wrap: balance; }
   .foot + .foot { margin-top: 6px; }
   .foot a { color: inherit; text-underline-offset: 3px; }
 
@@ -289,7 +294,7 @@ const fmtShort = s => parse(s).toLocaleDateString(undefined, { month: "short", d
 const same = (a, b) => a.trim().toLowerCase() === b.trim().toLowerCase();
 const names = list => list.map(p => p.name).join(", ");
 const today = iso(new Date());
-const CREDIT = `<p class="foot">A tiny project by <a href="https://github.com/dianakarp">dianakarp</a> to socialize more · est. Nov 2026</p>`;
+const CREDIT = `<p class="foot">A tiny project by <a href="https://github.com/dianakarp">dianakarp</a> to socialize more · est.&nbsp;Nov&nbsp;2026</p>`;
 
 // ───────── The bee (drawn here, used everywhere) ─────────
 let beeCount = 0;
