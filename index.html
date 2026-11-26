@@ -137,9 +137,16 @@
   /* Plan page header */
   .brand { display: inline-flex; align-items: center; gap: 4px; color: var(--ink); text-decoration: none; font-family: var(--display); font-size: 19px; font-weight: 500; }
   .brand .bee { width: 44px; height: 37px; }
-  .plan-head { margin-top: 14px; }
+  .plan-head { display: flex; align-items: flex-start; gap: 12px; margin-top: 14px; }
+  .plan-head > div { flex: 1; min-width: 0; }
+  .plan-head .btn { flex: none; margin-top: 2px; }
   .plan-head h1 { font-size: clamp(26px, 7vw, 32px); overflow-wrap: anywhere; }
   .range { margin-top: 6px; color: var(--muted); }
+  .head-msg { font-size: 15px; font-weight: 600; color: var(--lilac-ink); }
+  .head-msg:not(:empty) { margin-top: 8px; }
+  .edit-plan h2 { margin-bottom: 4px; }
+  .edit-plan .sub { margin-bottom: 14px; font-size: 14px; color: var(--muted); }
+  .edit-plan .note { margin: -2px 0 14px; font-size: 14px; color: var(--rose-ink); }
   .share { display: flex; gap: 8px; margin-top: 14px; }
   .share input {
     flex: 1; min-width: 0; min-height: 44px; padding: 8px 16px; border: 1.5px solid var(--line); border-radius: 999px;
@@ -293,6 +300,8 @@ const fmtLong = s => parse(s).toLocaleDateString(undefined, { weekday: "long", m
 const fmtShort = s => parse(s).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 const same = (a, b) => a.trim().toLowerCase() === b.trim().toLowerCase();
 const names = list => list.map(p => p.name).join(", ");
+// Rounded, because a day across a daylight-saving change is 23 or 25 hours long.
+const daysApart = (a, b) => Math.round((parse(b) - parse(a)) / 864e5);
 const today = iso(new Date());
 const CREDIT = `<p class="foot">A tiny project by <a href="https://github.com/dianakarp">dianakarp</a> to socialize more · est.&nbsp;Nov&nbsp;2026</p>`;
 
@@ -368,8 +377,8 @@ async function api(path, method = "GET", body) {
   return data;
 }
 
-function say(text, isErr = false) {
-  const m = $("msg"); if (!m) return;
+function say(text, isErr = false, id = "msg") {
+  const m = $(id); if (!m) return;
   m.textContent = text;
   m.classList.toggle("err", isErr);
 }
@@ -410,11 +419,12 @@ function showCreate() {
     if (!title) { $("title").focus(); return say("Give your plan a name.", true); }
     if (!s || !e) return say("Pick an earliest and a latest day.", true);
     if (e < s) return say("The latest day needs to be on or after the earliest day.", true);
-    if ((parse(e) - parse(s)) / 864e5 > 61) return say("Keep the dates within about two months.", true);
+    if (daysApart(s, e) > 61) return say("Keep the dates within about two months.", true);
     $("go").disabled = true;
     say("Making your plan…");
     try {
-      const { id } = await api("/plans", "POST", { title, start: s, end: e });
+      const { id, owner_key } = await api("/plans", "POST", { title, start: s, end: e });
+      if (owner_key) saved.set("owner:" + id, owner_key); // lets this browser change the plan later
       session.set("new:" + id, "1");
       location.href = location.pathname + "?p=" + encodeURIComponent(id);
     } catch (err) {
@@ -425,20 +435,21 @@ function showCreate() {
 }
 
 // ───────── A plan: pick days, see the best ones ─────────
-let plan = null, lastData = "";
+let plan = null, lastData = "", editing = false;
 const sel = new Set();
 const findPerson = name => plan.people.find(p => same(p.name, name));
+// Only the browser that made a plan keeps its owner key. Plans made before owner keys existed
+// have no owner yet, so anyone can change one, and whoever does first becomes its owner.
+const ownerKey = () => saved.get("owner:" + plan.id) || "";
+const canEditPlan = () => "has_owner" in plan && (!plan.has_owner || !!ownerKey());
 
 function showPlan() {
-  document.title = `${plan.title} · Plan Bee`;
   const link = location.origin + location.pathname + "?p=" + encodeURIComponent(plan.id);
   app.innerHTML = `
     <header>
       <a class="brand" href="${esc(location.pathname)}" title="Make a new plan">${bee()}Plan Bee</a>
-      <div class="plan-head">
-        <h1>${esc(plan.title)}</h1>
-        <p class="range">${esc(fmtShort(plan.start_date))} to ${esc(fmtShort(plan.end_date))}</p>
-      </div>
+      <div id="head"></div>
+      <p id="head-msg" class="head-msg" role="status"></p>
       <div class="share">
         <input id="link" readonly value="${esc(link)}" aria-label="Link to this plan">
         <button class="btn honey" id="share">${canShare ? "Share link" : "Copy link"}</button>
@@ -474,9 +485,11 @@ function showPlan() {
       <ul id="people" class="people"></ul>
     </section>
 
-    <p class="foot">This plan is deleted automatically after ${esc(fmtShort(plan.expires_at))}.</p>
+    <p class="foot" id="expiry"></p>
     ${CREDIT}`;
+  renderHead();
 
+  $("head").addEventListener("click", ev => { if (ev.target.closest("#edit-plan")) openEdit(); });
   $("share").addEventListener("click", async () => {
     if (canShare) {
       try { await navigator.share({ title: plan.title, text: `Which days can you make "${plan.title}"?`, url: link }); } catch {}
@@ -638,7 +651,109 @@ function applyPlan(data) {
   return true;
 }
 
-function rerender() { syncNameUI(); renderCalendar(); renderResults(); }
+function rerender() { renderHead(); syncNameUI(); renderCalendar(); renderResults(); }
+
+// ───────── Changing the plan's name and dates ─────────
+function renderHead() {
+  document.title = `${plan.title} · Plan Bee`;
+  $("expiry").textContent = `This plan is deleted automatically after ${fmtShort(plan.expires_at)}.`;
+  if (editing) return; // don't wipe the form while someone is typing in it
+  $("head").innerHTML = `
+    <div class="plan-head">
+      <div>
+        <h1>${esc(plan.title)}</h1>
+        <p class="range">${esc(fmtShort(plan.start_date))} to ${esc(fmtShort(plan.end_date))}</p>
+      </div>
+      ${canEditPlan() ? `<button class="btn ghost small" id="edit-plan">Edit plan</button>` : ""}
+    </div>`;
+}
+
+function openEdit() {
+  editing = true;
+  say("", false, "head-msg");
+  const startMin = plan.start_date < today ? plan.start_date : today; // a plan that already started can keep its first day
+  $("head").innerHTML = `
+    <form id="edit-plan-form" class="panel edit-plan" novalidate>
+      <h2>Edit plan</h2>
+      <p class="sub">${plan.has_owner ? "Only this browser can change the plan. Your friends can't." : "Once you save, only this browser will be able to change the plan."}</p>
+      <label class="field">What's the plan?
+        <input id="e-title" maxlength="80" autocomplete="off" value="${esc(plan.title)}">
+      </label>
+      <div class="pair">
+        <label class="field">Earliest day <input id="e-start" type="date" value="${plan.start_date}" min="${startMin}"></label>
+        <label class="field">Latest day <input id="e-end" type="date" value="${plan.end_date}"></label>
+      </div>
+      <p id="e-note" class="note" hidden></p>
+      <div class="actions">
+        <button class="btn honey" id="e-save">Save changes</button>
+        <button type="button" class="btn ghost" id="e-cancel">Cancel</button>
+      </div>
+      <p id="e-msg" class="msg" role="status"></p>
+    </form>`;
+  fitEnd();
+  $("e-start").addEventListener("change", () => {
+    if (!fitEnd()) return;
+    const end = $("e-end");
+    if (!end.value || end.value < end.min) end.value = end.min;
+    noteOutside();
+  });
+  $("e-end").addEventListener("change", noteOutside);
+  $("e-cancel").addEventListener("click", closeEdit);
+  $("edit-plan-form").addEventListener("keydown", ev => { if (ev.key === "Escape") closeEdit(); });
+  $("edit-plan-form").addEventListener("submit", saveEdit);
+  $("e-title").focus();
+}
+
+// The latest day can't be before the earliest day or today, or more than about two months after the earliest day.
+function fitEnd() {
+  const s = $("e-start").value, end = $("e-end");
+  if (!s) return false;
+  end.min = s > today ? s : today;
+  end.max = iso(addDays(parse(s), 61));
+  return true;
+}
+
+// Warn when friends already picked days that the new dates would leave out.
+function noteOutside() {
+  const s = $("e-start").value, e = $("e-end").value, note = $("e-note");
+  const out = s && e ? plan.people.filter(p => p.days.some(d => d < s || d > e)) : [];
+  const who = out.length > 3 ? `${names(out.slice(0, 2))} and ${out.length - 2} others`
+    : out.length > 1 ? `${names(out.slice(0, -1))} and ${out[out.length - 1].name}` : out.length ? out[0].name : "";
+  note.textContent = out.length ? `${who} picked days outside these dates, so those days won't count.` : "";
+  note.hidden = !out.length;
+}
+
+function closeEdit() {
+  editing = false;
+  renderHead();
+  const b = $("edit-plan"); if (b) b.focus();
+}
+
+async function saveEdit(ev) {
+  ev.preventDefault();
+  const title = $("e-title").value.trim(), s = $("e-start").value, e = $("e-end").value;
+  const oops = text => say(text, true, "e-msg");
+  if (!title) { $("e-title").focus(); return oops("Give your plan a name."); }
+  if (!s || !e) return oops("Pick an earliest and a latest day.");
+  if (e < s) return oops("The latest day needs to be on or after the earliest day.");
+  if (daysApart(s, e) > 61) return oops("Keep the dates within about two months.");
+  if (title === plan.title && s === plan.start_date && e === plan.end_date) return closeEdit();
+  $("e-save").disabled = true;
+  say("Saving…", false, "e-msg");
+  try {
+    const { owner_key, ...data } = await api(`/plans/${plan.id}`, "PUT", { title, start: s, end: e, owner_key: ownerKey() });
+    if (owner_key) saved.set("owner:" + plan.id, owner_key);
+    applyPlan(data);
+    editing = false;
+    rerender();
+    say("Plan updated!", false, "head-msg");
+    const b = $("edit-plan"); if (b) b.focus();
+  } catch (err) {
+    oops(err.message);
+    $("e-save").disabled = false;
+    if (err.status === 404) setTimeout(showMissing, 1200);
+  }
+}
 
 async function save() {
   const typed = $("name").value.trim();

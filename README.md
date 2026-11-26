@@ -13,6 +13,7 @@ Plan Bee finds the day that works for you and your friends. There are no account
 - **Plan A, B and C.** The three days the most people can make, with who's in and who's missing.
 - **Notes.** Add a comment like "only after 6pm" if your days come with limits.
 - **Optional PIN.** Lock your answers so nobody else can change them.
+- **Fix a plan later.** Whoever made the plan can change its name and dates from the same browser.
 - **Cleans up after itself.** Plans are deleted 30 days after their last day.
 
 ## How it's built
@@ -23,7 +24,7 @@ Plan Bee finds the day that works for you and your friends. There are no account
 
 ## Privacy
 
-There are no accounts, ads or analytics. A plan stores its name and dates, plus each person's name, days, optional comment and a hashed version of their PIN (never the PIN itself). Anyone with a plan's link can see it and change answers that aren't locked with a PIN, so keep comments casual.
+There are no accounts, ads or analytics. A plan stores its name and dates, a hashed key that lets the browser that made it change it, plus each person's name, days, optional comment and a hashed version of their PIN (never the PIN itself). Anyone with a plan's link can see it and change answers that aren't locked with a PIN, so keep comments casual.
 
 ---
 
