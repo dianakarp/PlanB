@@ -20,6 +20,7 @@ Plan Bee finds the day that works for you and your friends. There are no account
 
 - **`index.html`** is the whole site: one page of HTML, CSS and JavaScript with no frameworks, hosted on GitHub Pages.
 - **Plans are saved** by a small [Cloudflare Worker](https://developers.cloudflare.com/workers/) with a [D1](https://developers.cloudflare.com/d1/) database, both on Cloudflare's free plan.
+- **`worker/worker.js`** is the Worker's code. Cloudflare runs the copy in the Worker's online editor, not this one, so after changing this file, paste it there and deploy.
 - **The two connect** through the `API_URL` line near the top of the script in `index.html`.
 
 ## Privacy
